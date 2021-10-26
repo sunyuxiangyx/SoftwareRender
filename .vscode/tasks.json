@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "cppbuild",
+      "label": "g++ build active file",
+      "command": "/usr/bin/g++",
+      "args": ["-std=c++14", "-g", "${workspaceFolder}/main.cpp", "${workspaceFolder}/ppm.cpp"],
+      "options": {
+        "cwd": "/usr/bin"
+      },
+      "problemMatcher": ["$gcc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "detail": "编译器: /usr/bin/g++"
+    }
+  ]
+}
