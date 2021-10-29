@@ -1,11 +1,11 @@
 #include "image.h"
 #include <cstdlib>
-#include <iostream>
 #include <utility>
 #include <functional>
 #include <algorithm>
 #include "math.h"
 #include "model.h"
+#include <iostream>
 using namespace std;
 
 void line(Image& image, int x0, int y0, int x1, int y1, std::array<int, 3> color) { 
@@ -89,20 +89,39 @@ void triangle(Image& image, vec3i v0, vec3i v1, vec3i v2, vec2f uv0, vec2f uv1, 
     }
 }
 
+mat4f look_at(vec3f eye, vec3f center, vec3f up) {
+    vec3f z = (eye-center).normalize();
+    vec3f x = cross<3, float>(up, z).normalize();
+    vec3f y = cross<3, float>(z, x).normalize();
+    mat4f Minv = identity<4, float>();
+    mat4f Tr = identity<4, float>();
+    for (int i = 0; i < 3; i++) {
+        Minv[0][i] = x[i];
+        Minv[1][i] = y[i];
+        Minv[2][i] = z[i];
+        Tr[i][3] = -center[i];
+    }
+    return Minv*Tr;
+}
 
 int main() {
     Image i {1024, 1024};
-    function<vec3i(vec3f)> f = [](vec3f x) {
+    function<vec3i(vec4f)> f = [](vec4f x) {
         vec3i rv = {512 * (x[0] + 1), 512 * (x[1] + 1), 512 * (x[2] + 1) };
         //cout << int(512 * (x+1)) << endl;
         return rv;
     };
     Model m {"african_head.obj"};
     m.load_diffuse("african_head_diffuse.ppm");
+    mat4f view = look_at({2,2,2}, {0,0,0}, {0,1,0});
     for (int idx = 0; idx < m.faces_vrt.size(); idx++) {
         const auto& vrt {m.faces_vrt[idx]};
         const auto& tex {m.faces_tex[idx]};
-        triangle(i,f(m.vertices[vrt[0]]), f(m.vertices[vrt[1]]), f(m.vertices[vrt[2]]),
+
+        vec3i v1 = f(view * m.vertices[vrt[0]].to_homo(1));
+        vec3i v2 = f(view * m.vertices[vrt[1]].to_homo(1));
+        vec3i v3 = f(view * m.vertices[vrt[2]].to_homo(1));
+        triangle(i,v1, v2, v3,
         m.uv[tex[0]], m.uv[tex[1]], m.uv[tex[2]], m);
         //line(i, f(m.vertices[vrt[0]][0]), f(m.vertices[vrt[0]][1]), f(m.vertices[vrt[1]][0]), f(m.vertices[vrt[1]][1]),{255,255,255});
         //line(i, f(m.vertices[vrt[2]][0]), f(m.vertices[vrt[2]][1]), f(m.vertices[vrt[1]][0]), f(m.vertices[vrt[1]][1]),{255,255,255});
