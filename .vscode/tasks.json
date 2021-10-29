@@ -2,10 +2,10 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "cppbuild",
+      "type": "shell",
       "label": "g++ build active file",
       "command": "/usr/bin/g++",
-      "args": ["-std=c++14", "-g", "${workspaceFolder}/main.cpp", "${workspaceFolder}/ppm.cpp"],
+      "args": ["-std=c++14", "-g", "${workspaceFolder}/main.cpp", "${workspaceFolder}/image.cpp", "${workspaceFolder}/model.cpp", "-o", "${workspaceFolder}/a.out"],
       "options": {
         "cwd": "/usr/bin"
       },

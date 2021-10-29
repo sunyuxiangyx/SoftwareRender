@@ -17,7 +17,7 @@ class Image {
     std::array<int, 3>& get(int i, int j);
     std::array<int, 3>& get_f(float i, float j);
     float& get_zbuff(int i, int j);
-    void write_to(std::string filename);
+    void write_to(std::string filename, bool flip_vert = false);
     void apply_gamma(float gamma);
     unsigned int get_height() const;
     unsigned int get_width() const;

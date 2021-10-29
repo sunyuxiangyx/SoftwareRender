@@ -28,6 +28,21 @@ template<size_t DIM, class T> struct vec {
         rv[DIM] = last;
         return rv;
     }
+    vec<DIM-1, T> reduce_dim() {
+        vec<DIM-1, T> rv{};
+        for (int i = 0; i < DIM - 1; i++) {
+            rv.data[i] = this -> data[i];
+        }
+        return rv;
+    }
+    template<class U>
+    vec<DIM, U> astype() {
+        vec<DIM, U> rv{};
+        for (int i = 0; i < DIM; i++) {
+            rv.data[i] = this -> data[i];
+        }
+        return rv;
+    }
     vec();
     vec(T x) ;
     vec(T x, T y);
@@ -163,7 +178,7 @@ mat<DIM, T> operator*(mat<DIM, T> lhs, mat<DIM, T> rhs) {
     mat<DIM, T> rv {};
     for (int i = 0; i < DIM; i++) {
         for (int j = 0; j < DIM; j++) {
-            rv.data[i][j] = dot(lhs.get_col(i), rhs.get_row(j));
+            rv.data[i][j] = dot(lhs.get_row(i), rhs.get_col(j));
         }
     }
     return rv;
@@ -173,7 +188,7 @@ template<size_t DIM, class T>
 vec<DIM, T> operator*(mat<DIM, T> lhs, vec<DIM, T> rhs) {
     vec<DIM, T> rv {};
     for (int i = 0; i < DIM; i++) {
-        rv.data[i] = dot(lhs.get_col(i), rhs);
+        rv.data[i] = dot(lhs.get_row(i), rhs);
     }
     return rv;
 }

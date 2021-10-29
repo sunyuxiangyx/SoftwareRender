@@ -43,27 +43,27 @@ void line(Image& image, int x0, int y0, int x1, int y1, std::array<int, 3> color
     
 }
 
-void triangle(Image& image, vec3i v0, vec3i v1, vec3i v2, vec2f uv0, vec2f uv1, vec2f uv2, Model m) { 
-    int x0{v0[0]}, x1{v1[0]}, x2{v2[0]};
-    int y0{v0[1]}, y1{v1[1]}, y2{v2[1]};
-    int z0{v0[2]}, z1{v1[2]}, z2{v2[2]};
+void triangle(Image& image, vec4f v0, vec4f v1, vec4f v2, vec2f uv0, vec2f uv1, vec2f uv2, Model m) { 
+    float x0{v0[0]}, x1{v1[0]}, x2{v2[0]};
+    float y0{v0[1]}, y1{v1[1]}, y2{v2[1]};
+    float z0{v0[2]}, z1{v1[2]}, z2{v2[2]};
     //line(image, x1, y1, x2, y2, color);
     //line(image, x1, y1, x0, y0, color);
     //line(image, x0, y0, x2, y2, color);
-    function<int(int,int)> f01 = [=](int x, int y) {
+    function<float(float,float)> f01 = [=](float x, float y) {
         return (y0-y1)*x + (x1-x0)*y+x0*y1 - x1*y0;
     };
-    function<int(int,int)> f12 = [=](int x, int y) {
+    function<float(float,float)> f12 = [=](float x, float y) {
         return (y1-y2)*x + (x2-x1)*y+x1*y2 - x2*y1;
     };
-    function<int(int,int)> f20 = [=](int x, int y) {
+    function<float(float,float)> f20 = [=](float x, float y) {
         return (y2-y0)*x + (x0-x2)*y+x2*y0 - x0*y2;
     };
 
-    const int x_min = min(x0, min(x1, x2));
-    const int x_max = max(x0, max(x1, x2));
-    const int y_min = min(y0, min(y1, y2));
-    const int y_max = max(y0, max(y1, y2));
+    const int x_min = ceil(min(x0, min(x1, x2)));
+    const int x_max = floor(max(x0, max(x1, x2)));
+    const int y_min = ceil(min(y0, min(y1, y2)));
+    const int y_max = ceil(max(y0, max(y1, y2)));
     const float f_alpha = f12(x0, y0);
     const float f_beta = f20(x1, y1);
     const float f_gamma = f01(x2, y2);
@@ -104,28 +104,50 @@ mat4f look_at(vec3f eye, vec3f center, vec3f up) {
     return Minv*Tr;
 }
 
+mat4f viewport(int x, int y, int w, int h) {
+    mat4f rv{};
+    float depth = 1.0;
+    rv[0][0] = float(w) / 2;
+    rv[1][1] = float(h) / 2;
+    rv[2][2] = depth / 2;
+    rv[3][3] = 1.;
+    rv[0][3] = float(x) + float(w) / 2;
+    rv[1][3] = float(y) + float(h) / 2;
+    rv[2][3] = depth / 2;
+    return rv;
+}
+
+mat4f projection(float t, float b, float n, float f, float l, float r) {
+    mat4f scale{};
+    mat4f translate = identity<4, float>();
+    scale[0][0] = 2 / (r - l);
+    scale[1][1] = 2 / (t - b);
+    scale[2][2] = 2 / (r - l);
+    scale[3][3] = 1.;
+
+    translate[0][3] = - (l + r) / 2;
+    translate[1][3] = - (b + t) / 2;
+    translate[2][3] = - (f + n) / 2;
+    return scale * translate;
+}
+
 int main() {
     Image i {1024, 1024};
-    function<vec3i(vec4f)> f = [](vec4f x) {
-        vec3i rv = {512 * (x[0] + 1), 512 * (x[1] + 1), 512 * (x[2] + 1) };
-        //cout << int(512 * (x+1)) << endl;
-        return rv;
-    };
+
     Model m {"african_head.obj"};
     m.load_diffuse("african_head_diffuse.ppm");
-    mat4f view = look_at({2,2,2}, {0,0,0}, {0,1,0});
+    mat4f view = look_at({2,2,-2}, {0,0,0}, {0,1,0});
+    mat4f proj = projection(1, -1, 1, -1, -1, 1);
+    mat4f port = viewport(0,0, 1024, 1024);
+    mat4f transformation = port * proj * view;
     for (int idx = 0; idx < m.faces_vrt.size(); idx++) {
         const auto& vrt {m.faces_vrt[idx]};
         const auto& tex {m.faces_tex[idx]};
-
-        vec3i v1 = f(view * m.vertices[vrt[0]].to_homo(1));
-        vec3i v2 = f(view * m.vertices[vrt[1]].to_homo(1));
-        vec3i v3 = f(view * m.vertices[vrt[2]].to_homo(1));
+        vec4f v1 = transformation * m.vertices[vrt[0]].to_homo(1);
+        vec4f v2 = transformation * m.vertices[vrt[1]].to_homo(1);
+        vec4f v3 = transformation * m.vertices[vrt[2]].to_homo(1);
         triangle(i,v1, v2, v3,
         m.uv[tex[0]], m.uv[tex[1]], m.uv[tex[2]], m);
-        //line(i, f(m.vertices[vrt[0]][0]), f(m.vertices[vrt[0]][1]), f(m.vertices[vrt[1]][0]), f(m.vertices[vrt[1]][1]),{255,255,255});
-        //line(i, f(m.vertices[vrt[2]][0]), f(m.vertices[vrt[2]][1]), f(m.vertices[vrt[1]][0]), f(m.vertices[vrt[1]][1]),{255,255,255});
-        //line(i, f(m.vertices[vrt[0]][0]), f(m.vertices[vrt[0]][1]), f(m.vertices[vrt[2]][0]), f(m.vertices[vrt[2]][1]),{255,255,255});
     }
-    i.write_to("shit.ppm");
+    i.write_to("output.ppm", true);
 }

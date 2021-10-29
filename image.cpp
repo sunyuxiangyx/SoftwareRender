@@ -30,12 +30,21 @@ std::array<int, 3>& Image::get_f(float i, float j) {
 float& Image::get_zbuff(int i, int j) {
     return z_buffer[j * width + i];
 }
-void Image::write_to(std::string filename) {
+void Image::write_to(std::string filename, bool flip_vert) {
     std::ofstream file{filename};
     file << encoding_format << " " << width << " " << height << " " <<max_pixel_value<<std::endl;
-    for (const auto& pixel: values) {
-        file << pixel[0] << " " << pixel[1] << " " << pixel[2] << " ";
-    } 
+    if (! flip_vert) {
+        for (const auto& pixel: values) {
+            file << pixel[0] << " " << pixel[1] << " " << pixel[2] << " ";
+        } 
+    } else {
+        for (int i = height - 1; i >= 0; i--) {
+            for (int j = 0; j < width; j++) {
+                file << values[i * width + j][0] << " " << values[i * width + j][1] << " " << values[i * width + j][2] << " ";
+            }
+        }
+    }
+    
     file << std::endl;
 }
 
@@ -53,3 +62,4 @@ unsigned int Image::get_height() const {
 unsigned int Image::get_width() const {
     return width;
 }
+
