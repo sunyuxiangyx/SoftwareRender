@@ -20,7 +20,7 @@ template<size_t DIM, class T> struct vec {
         }
         return *this;
     }
-    vec<DIM+1, T> to_homo(T last = 0) {
+    vec<DIM+1, T> increment_dim(T last = 0) {
         vec<DIM+1, T> rv {};
         for (int i = 0; i < DIM; i++) {
             rv.data[i] = this -> data[i];
@@ -139,8 +139,22 @@ template<size_t DIM, class T> struct mat {
     const std::array<T, DIM>& operator[](const size_t i) const { return data[i]; }
     vec<DIM, T> get_row(size_t idx) const;
     vec<DIM, T> get_col(size_t idx) const;
+    void set_row(size_t idx, vec<DIM, T>);
+    void set_col(size_t idx, vec<DIM, T>);
     mat();
 };
+
+template<size_t DIM, class T> 
+void mat<DIM, T>::set_row(size_t idx, vec<DIM, T> v)  {
+    data[idx] = v;
+}
+
+template<size_t DIM, class T> 
+void mat<DIM, T>::set_col(size_t idx, vec<DIM, T> v)  {
+    for (int i = 0; i < DIM; i++) {
+        data[i][idx] = v[i];
+    }
+}
 
 template<size_t DIM, class T> 
 vec<DIM, T> mat<DIM, T>::get_row(size_t idx) const {
@@ -209,4 +223,7 @@ std::ostream& operator<<(std::ostream& os, const mat<DIM, T>& input) {
     return os;
 }
 
-typedef mat<4,  float> mat4f;
+typedef mat<4, float> mat4f;
+typedef mat<3, float> mat3f;
+
+
