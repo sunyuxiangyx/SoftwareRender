@@ -13,6 +13,7 @@ template<size_t DIM, class T> struct vec {
         }
         norm = std::sqrt(norm);
         if (norm < 1e-10) {
+            std::cerr << "normal = 0" << std::endl;
             return *this;
         }
         for(auto& elem: data) {
@@ -141,6 +142,7 @@ template<size_t DIM, class T> struct mat {
     vec<DIM, T> get_col(size_t idx) const;
     void set_row(size_t idx, vec<DIM, T>);
     void set_col(size_t idx, vec<DIM, T>);
+
     mat();
 };
 
@@ -148,6 +150,7 @@ template<size_t DIM, class T>
 void mat<DIM, T>::set_row(size_t idx, vec<DIM, T> v)  {
     data[idx] = v;
 }
+
 
 template<size_t DIM, class T> 
 void mat<DIM, T>::set_col(size_t idx, vec<DIM, T> v)  {
@@ -222,6 +225,66 @@ std::ostream& operator<<(std::ostream& os, const mat<DIM, T>& input) {
     }
     return os;
 }
+
+
+template<size_t DIM, class T>
+double minor(const mat<DIM, T>& input, int row, int col);
+
+template<class T>
+double det(const mat<1, T>& input) {
+    return input[0][0];
+}
+
+template<size_t DIM, class T> 
+double det(const mat<DIM, T>& input) {
+    double ret = 0;
+    for (int i = 0; i < DIM; i++) {
+        ret += input[i][0] * minor(input, i, 0) * (i % 2 == 0 ? 1 : -1);
+    }
+    return ret;
+}
+
+
+template<size_t DIM, class T>
+double minor(const mat<DIM, T>& input, int row, int col) {
+    mat<DIM - 1, T> ret;
+    for (int i = 0; i < DIM - 1; i++) {
+        for (int j = 0; j < DIM -1; j++) {
+            ret[i][j] = input[i < row ? i : i + 1][j < col ? j : j + 1];
+        }
+    }
+    //std::cout << ret << std::endl;
+    return det(ret);
+}
+
+template<size_t DIM, class T>
+double cofactor(const mat<DIM, T>& input, int row, int col) {
+    return minor(input, row, col) * ((row + col)%2 == 0? 1 : -1);
+}
+
+template<size_t DIM, class T>
+mat<DIM, T> transpose(const mat<DIM, T>& input) {
+    mat<DIM, T> ret;
+    for (int i = 0; i < DIM; i++) {
+        for (int j = 0; j < DIM; j++) {
+            ret[i][j] = input[j][i];
+        }
+    }
+    return ret;
+}
+
+template<size_t DIM, class T>
+mat<DIM, T> inverse(const mat<DIM, T>& input) {
+    double det_ = det(input);
+    mat<DIM, T> ret;
+    for (int i = 0; i < DIM; i++) {
+        for (int j = 0; j < DIM; j++) {
+            ret[i][j] = cofactor(input, i, j) / det_;
+        }
+    }
+    return transpose(ret);
+}
+
 
 typedef mat<4, float> mat4f;
 typedef mat<3, float> mat3f;

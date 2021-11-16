@@ -51,6 +51,6 @@ Model::Model(const std::string filename) {
 }
 
 Model::~Model() {}
-void Model::load_diffuse(const std::string filename) {
-    diffuse = Image(filename);
-}
+// void Model::load_diffuse(const std::string filename) {
+//     diffuse = Image(filename);
+// }

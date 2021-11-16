@@ -2,23 +2,25 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <memory>
+#include "math.h"
 class Image {
-    std::string encoding_format = "P3";
-    unsigned int height, width;
-    unsigned int max_pixel_value = 255;
-    std::vector<std::array<int, 3>> values;
-    std::vector<float> z_buffer;
-    bool inilized = false;
+    int height, width, channel;
+    int max_pixel_value = 255;
+    std::unique_ptr<unsigned char[]> values;
     public:
-    Image(std::string filename);
-    Image(unsigned int width, unsigned int height);
     Image();
+    Image(std::string filename);
+    Image(int width, int height, int channel);
     
-    std::array<int, 3>& get(int i, int j);
-    std::array<int, 3>& get_f(float i, float j);
-    float& get_zbuff(int i, int j);
-    void write_to(std::string filename, bool flip_vert = false);
+    vec3f get(int i, int j);
+    void set(int i, int j, vec3f color);
+    vec3f uv(float i, float j);
+    // std::array<int, 3>& get_f(float i, float j);
+    // float& get_zbuff(int i, int j);
+    void write_png(std::string filename, bool flip_vert = false);
     void apply_gamma(float gamma);
     unsigned int get_height() const;
     unsigned int get_width() const;
+    unsigned int get_channel() const;
 };

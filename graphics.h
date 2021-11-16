@@ -6,8 +6,8 @@
 #include <array>
 #include <functional>
 #include <cstdlib>
-
-void line(Image& image, int x0, int y0, int x1, int y1, std::array<int, 3> color) { 
+#include <vector>
+void line(Image& image, int x0, int y0, int x1, int y1, vec3f color) { 
     bool steep = false;
     if (abs(x0-x1) < abs(y0-y1)) {
         std::swap(x0, y0);
@@ -27,9 +27,9 @@ void line(Image& image, int x0, int y0, int x1, int y1, std::array<int, 3> color
     for (int x = x0; x <= x1; x++) {
         // cout << x << " " << y << " " << d << endl;
         if (steep) {
-            image.get(y,x) = color;
+            image.set(y, x, color);
         } else {
-            image.get(x,y) = color;
+            image.set(x, y, color);
         }
         
         if (d < 0) {
@@ -42,8 +42,8 @@ void line(Image& image, int x0, int y0, int x1, int y1, std::array<int, 3> color
     
 }
 
-template<class Uniform, class Varying>
-void triangle(Image& image, Shader<Uniform, Varying>& shader, std::array<vec4f, 3> pts) { 
+template<class Uniform, class VS_IN, class VS_OUT>
+void triangle(Image& image, Shader<Uniform, VS_IN, VS_OUT>& shader, std::array<vec4f, 3> pts, std::vector<double>& z_buffer) { 
     const vec4f v0{pts[0]};
     const vec4f v1{pts[1]};
     const vec4f v2{pts[2]};
@@ -63,10 +63,10 @@ void triangle(Image& image, Shader<Uniform, Varying>& shader, std::array<vec4f, 
         return (y2-y0)*x + (x0-x2)*y+x2*y0 - x0*y2;
     };
 
-    const int x_min = ceil(std::min(x0, std::min(x1, x2)));
-    const int x_max = floor(std::max(x0, std::max(x1, x2)));
-    const int y_min = ceil(std::min(y0, std::min(y1, y2)));
-    const int y_max = ceil(std::max(y0, std::max(y1, y2)));
+    const int x_min = std::max<int>(floor(std::min(x0, std::min(x1, x2))), 0);
+    const int x_max = std::min<int>(ceil(std::max(x0, std::max(x1, x2))), image.get_width() - 1);
+    const int y_min = std::max<int>(floor(std::min(y0, std::min(y1, y2))), 0);
+    const int y_max = std::min<int>(ceil(std::max(y0, std::max(y1, y2))), image.get_height() - 1);
     const float f_alpha = f12(x0, y0);
     const float f_beta = f20(x1, y1);
     const float f_gamma = f01(x2, y2);
@@ -75,16 +75,15 @@ void triangle(Image& image, Shader<Uniform, Varying>& shader, std::array<vec4f, 
             float alpha = f12(x, y) / f_alpha;
             float beta = f20(x, y) / f_beta;
             float gamma = f01(x, y) / f_gamma;
-            if (alpha >= 0 and beta >= 0 and gamma >= 0) {
+            if (alpha >= 0 and beta >= 0 and gamma >= 0 and alpha <=1 and beta <= 1 and gamma <= 1 and (abs(alpha + beta + gamma - 1) < 1e-5)) {
                 if ((alpha > 0 or f_alpha * f12(-1, -1) > 0) and
                     (beta > 0 or f_beta * f20(-1, -1) > 0) and 
                     (gamma > 0 or f_gamma * f01(-1, -1) > 0)) {
                         float z = z0 * alpha + z1 * beta + z2* gamma;
-                        if (image.get_zbuff(x, y) < z ) {
-                            image.get_zbuff(x, y) = z;
-                            //vec2f dest = uv0 * alpha + uv1 * beta + uv2 * gamma;
-                            //image.get(x, y) = m.diffuse.get_f(dest[0], 1-dest[1]);
-                            image.get(x, y) = shader.fragment_process({alpha, beta, gamma}).data;
+                        if (int idx = x + image.get_width() * y; z_buffer.at(idx) < z) {
+                            z_buffer[idx] = z;
+                            shader.fragment_interpolation({alpha, beta, gamma});
+                            image.set(x, y, shader.fragment_process().data);
                         }
                         
                     }
@@ -94,7 +93,7 @@ void triangle(Image& image, Shader<Uniform, Varying>& shader, std::array<vec4f, 
 }
 
 mat4f look_at(vec3f eye, vec3f center, vec3f up) {
-    vec3f z = (eye-center).normalize();
+    vec3f z = (center - eye).normalize();
     vec3f x = cross<3, float>(up, z).normalize();
     vec3f y = cross<3, float>(z, x).normalize();
     mat4f Minv = identity<4, float>();
@@ -103,7 +102,7 @@ mat4f look_at(vec3f eye, vec3f center, vec3f up) {
         Minv[0][i] = x[i];
         Minv[1][i] = y[i];
         Minv[2][i] = z[i];
-        Tr[i][3] = -center[i];
+        Tr[i][3] = -eye[i];
     }
     return Minv*Tr;
 }
@@ -121,16 +120,30 @@ mat4f viewport(int x, int y, int w, int h) {
     return rv;
 }
 
-mat4f projection(float t, float b, float n, float f, float l, float r) {
+mat4f Mortho(float t, float b, float n, float f, float l, float r) {
     mat4f scale{};
     mat4f translate = identity<4, float>();
     scale[0][0] = 2 / (r - l);
     scale[1][1] = 2 / (t - b);
-    scale[2][2] = 2 / (r - l);
+    scale[2][2] = 2 / (n - f);
     scale[3][3] = 1.;
 
     translate[0][3] = - (l + r) / 2;
     translate[1][3] = - (b + t) / 2;
     translate[2][3] = - (f + n) / 2;
     return scale * translate;
+}
+
+mat4f Mpresp(float fov, float aspect, float near, float far) {
+    fov = fov * M_PI / 180.;
+    float t = near * tan(fov/2);
+    float r = aspect * t;
+
+    mat4f presp{};
+    presp[0][0] = near;
+    presp[1][1] = near;
+    presp[2][2] = (near + far);
+    presp[3][2] = 1.;
+    presp[2][3] = - near * far;
+    return Mortho(t, -t, near, far, -r, r) * presp;
 }
