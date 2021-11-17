@@ -7,7 +7,7 @@
 class Image {
     int height, width, channel;
     int max_pixel_value = 255;
-    std::unique_ptr<unsigned char[]> values;
+    std::unique_ptr<float[]> values;
     public:
     Image();
     Image(std::string filename);

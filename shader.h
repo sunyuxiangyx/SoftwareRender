@@ -53,14 +53,14 @@ struct PhongShader: public Shader<Uniform, class VS_IN, class VS_OUT> {
     };
 
     vec3f fragment_process() override {
-        float shadow = 1;
-        // if (uniform.shadow) {
-        //     vec4f pos_shadow = uniform.transform_shadow * fs_in.viewport_pos;
-        //     pos_shadow = pos_shadow/pos_shadow[3];
-        //     float z = uniform.shadow -> get(pos_shadow[0], pos_shadow[1])[0];
-        //     shadow += .7 *(z < pos_shadow[2]);
-        //     std::cerr << shadow << std::endl;
-        // }
+        float shadow = 0.3;
+        if (uniform.shadow) {
+            vec4f pos_shadow = uniform.transform_shadow * fs_in.viewport_pos;
+            pos_shadow = pos_shadow/pos_shadow[3];
+            float z = uniform.shadow -> get(pos_shadow[0], pos_shadow[1])[0];
+            shadow += 0.7*(z < pos_shadow[2]+0.05);
+            //std::cerr << shadow << std::endl;
+        }
         vec3f kd = uniform.diffuse -> uv(fs_in.uv_coord[0], 1 - fs_in.uv_coord[1]);
         vec3f ks =  uniform.specular -> uv(fs_in.uv_coord[0], 1 - fs_in.uv_coord[1]);
         // vec3f n = uniform.normal -> uv(fs_in.uv_coord[0], 1 - fs_in.uv_coord[1]);
@@ -120,20 +120,25 @@ struct PhongShader: public Shader<Uniform, class VS_IN, class VS_OUT> {
 
 struct DepthShader: public Shader<Uniform, class VS_IN, class VS_OUT> { 
 vec4f vertex_process(int trangle_idx, VS_IN vs_in) override {
-        vs_out[trangle_idx].view_pos =  uniform.transform_viewport * vs_in.vertex_position;
-        return uniform.transform_viewport * vs_in.vertex_position;
+        vs_out[trangle_idx].viewport_pos =  uniform.transform_viewport * vs_in.vertex_position;
+        vs_out[trangle_idx].view_pos = uniform.transform_view * vs_in.vertex_position;
+        return vs_out[trangle_idx].viewport_pos;
     };
 
     vec3f fragment_process() override {
-        float z {fs_in.view_pos[2]};
+        float z {fs_in.viewport_pos[2]};
         //z = (z + 1) / 2;
         return vec3f{z,z,z};
     };
 
     void fragment_interpolation(vec3f barycent) override {
+        float z[3] = {vs_out[0].view_pos[2],vs_out[1].view_pos[2],vs_out[2].view_pos[2]};
+        float z_p = 1. / (barycent[0]/z[0] +  barycent[1]/z[1] + barycent[02]/z[2]);
+
         fs_in = VS_OUT{};
         for (int i = 0; i < 3; i++) {
-            fs_in.view_pos = fs_in.view_pos + vs_out[i].view_pos * barycent[i];
+            fs_in.viewport_pos = fs_in.viewport_pos + vs_out[i].viewport_pos * barycent[i] / z[i];
         }
+        fs_in.viewport_pos = fs_in.viewport_pos * z_p;
     }
 };

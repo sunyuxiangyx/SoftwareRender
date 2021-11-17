@@ -21,10 +21,11 @@ int main() {
 
     vec3f light_pos {0, 3, 3};
     vec3f light_dir {-2, 0, 0};
-    vec3f view_pos {-1.5, 0, 1.5};
+    vec3f view_pos {0, 0, 1.5};
     unsigned int width {1024};
     unsigned int height {1024};
     mat4f light_transform_viewport;
+    vector<double> shadow_z_buffer;
     // shadow_map
     Image shadow {width, height, 3};
     {   
@@ -33,7 +34,9 @@ int main() {
         mat4f view = look_at(light_pos, light_dir - light_pos, {0,1,0});
         mat4f proj = Mortho(4, -4, 0, 5, -4, 4);
         mat4f port = viewport(0,0, width, height);
-        depth_shader.uniform.transform_viewport = light_transform_viewport= port * proj * view;
+        depth_shader.uniform.transform_viewport =  port * proj * view;
+        depth_shader.uniform.transform_view = view;
+        light_transform_viewport = depth_shader.uniform.transform_viewport;
         for (int idx = 0; idx < m.faces_vrt.size(); idx++) {
             array<vec4f, 3> screen_coord_pts;
             VS_IN vs_in;
@@ -44,6 +47,7 @@ int main() {
             }
             triangle(shadow, depth_shader, screen_coord_pts, z_buffer);
         }
+        z_buffer.swap(shadow_z_buffer);
     }
 
     shadow.write_png("shadow.png", true);
