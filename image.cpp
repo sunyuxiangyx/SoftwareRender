@@ -24,15 +24,6 @@ Image::Image(std::string filename) {
 Image::Image(int width, int height, int channel) : height{height}, width{width}, channel{channel} {
     values = std::make_unique<float[]>(width * height * channel);
 }
-// std::array<int, 3>& Image::get(int i, int j) {
-//     return values[j * width + i];
-// }
-// std::array<int, 3>& Image::get_f(float i, float j) {
-//     return values[int(j * height)* width + int(i * width)];
-// }
-// float& Image::get_zbuff(int i, int j) {
-//     return z_buffer[j * width + i];
-// }
 
 vec3f Image::get(int i, int j) {
     if (i < 0 or i >= width or j< 0 or j >= height) {

@@ -8,37 +8,36 @@ Model::Model(const std::string filename) {
     string line;
     while(getline(in, line)) {
         istringstream iss{line};
-        char discard; // may repalce with ignore
         if (line.compare(0, 2, "v ") == 0) {
-            iss >> discard;
+            iss.ignore();
             vec3f v;
             for (int i = 0; i < 3; i++) { iss >> v[i]; }
             vertices.push_back(v);
         } else if (line.compare(0, 3, "vn ") == 0) {
-            iss >> discard >> discard;
+            iss.ignore(2);
             vec3f v;
             for (int i = 0; i < 3; i++) { iss >> v[i]; }
             normals.push_back(v);
         } else if (line.compare(0, 3, "vt ") == 0) {
-            iss >> discard >> discard;
+            iss.ignore(2);
             vec2f v;
             for (int i = 0; i < 2; i++) { iss >> v[i]; }
             uv.push_back(v);
         } else if (line.compare(0, 2, "f ") == 0) {
-            iss >> discard;
+            iss.ignore();
             vec3i vrt, tex, norm;
             bool tex_used = false, norm_used = false;
             for (int i = 0; i < 3; i++) {
                 iss >> vrt[i];
                 if (iss.peek() == '/') {
-                    iss >> discard;
+                    iss.ignore();
                     if (iss.peek() != '/') {
                         iss >> tex[i];
                         tex_used = true;
                     }
                 }
                 if (iss.peek() == '/') {
-                    iss >> discard;
+                    iss.ignore();
                     iss >> norm[i];
                     norm_used = true;
                 }

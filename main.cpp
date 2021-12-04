@@ -13,17 +13,17 @@ using namespace std;
 
 int main() {
     
-    Model m {"african_head.obj"};
-    m.diffuse = Image("african_head_diffuse.png");
-    m.specular = Image("african_head_spec.png");
-    m.normal = Image("african_head_nm_tangent.png");
+    Model m {"./Obj_model/african_head.obj"};
+    m.diffuse = Image("./Obj_model/african_head_diffuse.png");
+    m.specular = Image("./Obj_model/african_head_spec.png");
+    m.normal = Image("./Obj_model/african_head_nm_tangent.png");
 
 
-    vec3f light_pos {0, 3, 3};
+    vec3f light_pos {1, 2, 0};
     vec3f light_dir {-2, 0, 0};
-    vec3f view_pos {0, 0, 1.5};
-    unsigned int width {1024};
-    unsigned int height {1024};
+    vec3f view_pos {0, 0.5, 1.5};
+    int width {1024};
+    int height {1024};
     mat4f light_transform_viewport;
     vector<double> shadow_z_buffer;
     // shadow_map
@@ -50,7 +50,7 @@ int main() {
         z_buffer.swap(shadow_z_buffer);
     }
 
-    shadow.write_png("shadow.png", true);
+    shadow.write_png("shadow_map.png", true);
 
 
     Image image {width, height, 3};

@@ -59,11 +59,9 @@ struct PhongShader: public Shader<Uniform, class VS_IN, class VS_OUT> {
             pos_shadow = pos_shadow/pos_shadow[3];
             float z = uniform.shadow -> get(pos_shadow[0], pos_shadow[1])[0];
             shadow += 0.7*(z < pos_shadow[2]+0.05);
-            //std::cerr << shadow << std::endl;
         }
         vec3f kd = uniform.diffuse -> uv(fs_in.uv_coord[0], 1 - fs_in.uv_coord[1]);
         vec3f ks =  uniform.specular -> uv(fs_in.uv_coord[0], 1 - fs_in.uv_coord[1]);
-        // vec3f n = uniform.normal -> uv(fs_in.uv_coord[0], 1 - fs_in.uv_coord[1]);
         vec3f n = fs_in.normal.normalize();
 
         vec3f e1 = (vs_out[1].obj_pos - vs_out[0].obj_pos).reduce_dim();
@@ -76,7 +74,6 @@ struct PhongShader: public Shader<Uniform, class VS_IN, class VS_OUT> {
         vec3f t = (e1 * y2 - e2 * y1) * r;
         vec3f b = (e2 * x1 - e1 * x2) * r;
 
-    
         t = (t - n * dot(t, n)).normalize();
         b = (b - n * dot(b, n) - t * dot(b, t)).normalize();
         mat3f tbn;
@@ -93,7 +90,6 @@ struct PhongShader: public Shader<Uniform, class VS_IN, class VS_OUT> {
         for (int i = 0; i < 3; i++) {
             color[i] = std::min<float>(kd[i]* shadow * (0.1+ diff + .1* spec), 1.0);
         }
-        //return kd;
         return color;
     };
 
@@ -127,7 +123,6 @@ vec4f vertex_process(int trangle_idx, VS_IN vs_in) override {
 
     vec3f fragment_process() override {
         float z {fs_in.viewport_pos[2]};
-        //z = (z + 1) / 2;
         return vec3f{z,z,z};
     };
 
